@@ -1,11 +1,12 @@
 import { TextField, Button } from "@mui/material";
 import FormSection from "../../Components/FormSection/FormSection";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import NavBarItem from "../../Components/NavBarItem/NavBarItem";
 import TaskCardItem from "../../Components/TaskCardItem/TaskCardItem";
 import LoaderItem from "../../Components/LoaderItem/LoaderItem";
 import SnackBarItem from "../../Components/SnackBarItem/SnackBarItem";
+import { AuthorizeContext } from "../../Context/AuthContext";
 
 const TaskHomePage = () => {
   const inputsList = [
@@ -13,20 +14,18 @@ const TaskHomePage = () => {
     { label: "Due Date", name: "due_date", type: "date" },
   ];
 
-  // const { user_id } = useParams();
+  const { setIsAuthorizeUser } = useContext(AuthorizeContext);
   const [snackBarConfig, setSanckBarConfig] = useState({
     open: false,
     message: "",
   });
-  // const [isOpenSnackBar, setIsOpenSnackBar] = useState(false);
-  // const [snackbarMessage, setsnackbarMessage] = useState("");
+
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [userData, setUserData] = useState({});
   const [tasksList, setTasksList] = useState([]);
 
   const [formTaskData, setFormTaskData] = useState({});
-  const [updateTask, setUpdateTask] = useState();
   const [editableTask, setEditableTask] = useState({
     status: false,
     id: null,
@@ -47,11 +46,18 @@ const TaskHomePage = () => {
         Authorization: JSON.parse(localStorage.getItem("token")),
       },
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (response.status == 401) {
+          setIsAuthorizeUser(false);
+        }
+        console.log(response, "resres");
+        return response.json();
+      })
       .then((result) => {
         console.log(result, "get user data");
-        setUserData({ ...result.data });
+        setUserData({ ...result?.data });
         setIsLoading(false);
+        setIsAuthorizeUser(true);
       })
       .catch((error) => console.log(error, "error getting user data"));
   };
@@ -66,7 +72,7 @@ const TaskHomePage = () => {
       .then((response) => response.json())
       .then((result) => {
         console.log(result, "get user tasks");
-        setTasksList([...result.data]);
+        setTasksList([...result?.data]);
         setIsLoading(false);
       })
       .catch((error) => console.log(error, "error getting user tasks"));
@@ -121,7 +127,6 @@ const TaskHomePage = () => {
     });
   };
   const handleTaskUpdate = () => {
-    console.log("update title ...");
     handleSendTaskDataApi({
       endpoint: "update-task",
       method: "POST",
